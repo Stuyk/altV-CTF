@@ -2,7 +2,7 @@
 
 Remember to 🌟 this Github if you 💖 it.
 
-This resource is currently incomplete and in progress.
+This resource needs to be tested; it has not been tested yet.
 
 You can view the work being done on https://twitch.tv/stuykgaming
 

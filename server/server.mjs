@@ -143,14 +143,16 @@ function respawnPlayer(player, pos) {
 		if (pos !== undefined) {
 			player.spawn(pos.x, pos.y, pos.z, 100);
 		} else {
-			player.spawn(blueSpawn.x, blueSpawn.y, blueSpawn.z, 100);
+			const randomPos = RandomPosAround(blueSpawn, 20);
+			player.spawn(randomPos.x, randomPos.y, randomPos.z, 100);
 		}
 	} else {
 		player.model = 's_m_y_pestcont_01';
 		if (pos !== undefined) {
 			player.spawn(pos.x, pos.y, pos.z, 100);
 		} else {
-			player.spawn(redSpawn.x, redSpawn.y, redSpawn.z, 100);
+			const randomPos = RandomPosAround(redSpawn, 20);
+			player.spawn(randomPos.x, randomPos.y, randomPos.z, 100);
 		}
 	}	
 
@@ -338,6 +340,18 @@ function enterFlagzone(colshape, entity) {
 			updateScores();
 		}
 	}
+}
+
+function RandomPosAround(pos, range) {
+	if (pos === undefined || range === undefined) {
+		throw new Error('RandomPosAround => pos or range is undefined');
+	}
+
+	return {
+		x: pos.x + (Math.random() * (range * 2)) - range,
+		y: pos.y + (Math.random() * (range * 2)) - range,
+		z: pos.z
+	};
 }
 
 chat.registerCmd('tpblue', (player) => {
