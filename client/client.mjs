@@ -82,7 +82,11 @@ class TeamOption {
 teamOptions.push(new TeamOption(0.25, 0.5, 0.5, 1, 'Red', 255, 0, 0, 100, 'joinTeam', 'red'));
 teamOptions.push(new TeamOption(0.75, 0.5, 0.5, 1, 'Blue', 0, 0, 255, 100, 'joinTeam', 'blue'));
 
-alt.on('update', () => {	
+alt.on('update', () => {
+	if (hasRedFlag === alt.Player.local || hasBlueFlag === alt.Player.local) {
+		native.setSuperJumpThisFrame(alt.Player.local.scriptID);
+	}
+
 	native.restorePlayerStamina(alt.Player.local.scriptID, 100);
 
 	// Draw red flag drop.
@@ -207,9 +211,19 @@ alt.onServer('addPlaceholder', (team, location) => {
 alt.onServer('addFlagDrop', (team, location) => {
 	if (team === 'red') {
 		redFlagDrop = location;
+
+		if (hasRedFlag === alt.Player.local) {
+			native.setRunSprintMultiplierForPlayer(alt.Player.local.scriptID, 1.00);
+		}
+
 		hasRedFlag = undefined;
 	} else {
 		blueFlagDrop = location;
+
+		if (hasBlueFlag === alt.Player.local) {
+			native.setRunSprintMultiplierForPlayer(alt.Player.local.scriptID, 1.00);
+		}
+
 		hasBlueFlag = undefined;
 	}
 });
@@ -223,6 +237,10 @@ alt.onServer('removeFlagDrop', (team) => {
 });
 
 alt.onServer('hasFlag', (player, team) => {
+	if (player === alt.Player.local) {
+		native.setRunSprintMultiplierForPlayer(alt.Player.local.scriptID, 1.49);
+	}
+	
 	if (team === 'blue') {
 		// red team flag holder
 		hasRedFlag = player;
