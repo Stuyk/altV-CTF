@@ -10,6 +10,8 @@ var hasRedFlag = undefined; // Player
 var hasBlueFlag = undefined; // Player
 var redScore = 0;
 var blueScore = 0;
+var blueFlagBlip = undefined;
+var redFlagBlip = undefined;
 
 class TeamOption {
 	constructor(x, y, width, height, text, r, g, b, a, event, eventParam) {
@@ -111,6 +113,32 @@ alt.on('update', () => {
 		}
 	}
 
+	// Update Red Flag Position
+	if (hasRedFlag !== undefined && redFlagDrop === undefined && hasRedFlag !== null && redFlagDrop !== null) {
+		if (hasRedFlag.pos !== undefined) {
+			if (redFlagBlip === undefined) {
+				redFlagBlip = new alt.PointBlip(hasRedFlag.pos.x, hasRedFlag.pos.y, hasRedFlag.pos.z);
+				redFlagBlip.sprite = 38;
+				redFlagBlip.color = 1;
+			}
+				
+			redFlagBlip.position = [hasRedFlag.pos.x, hasRedFlag.pos.y, hasRedFlag.pos.z];
+		}
+	}
+
+	// Update Blue Flag Position
+	if (hasBlueFlag !== undefined && blueFlagDrop === undefined && hasBlueFlag !== null && blueFlagDrop !== null) {
+		if (hasBlueFlag.pos !== undefined) {
+			if (blueFlagBlip === undefined) {
+				blueFlagBlip = new alt.PointBlip(hasBlueFlag.pos.x, hasBlueFlag.pos.y, hasBlueFlag.pos.z);
+				blueFlagBlip.sprite = 38;
+				blueFlagBlip.color = 3;
+			}
+				
+			blueFlagBlip.position = [hasBlueFlag.pos.x, hasBlueFlag.pos.y, hasBlueFlag.pos.z];
+		}
+	}
+
 	if (flagPlaceholders.length >= 1) {
 		flagPlaceholders.forEach((placeholder) => {
 			var color = {
@@ -159,8 +187,7 @@ alt.on('update', () => {
 	if (!isMenuOpen) {
 		// Enable Controls, Unblur Background, Show Crosshair
 		native.enableAllControlActions(0);
-		native.transitionFromBlurred(100);
-		native.showHudComponentThisFrame(14);
+		// native.showHudComponentThisFrame(14);
 
 		// Draw Scores
 		drawText(`Red Score: ${redScore}`, 0.88, 0.15, 0.5, 255, 255, 255, 255);
@@ -174,7 +201,6 @@ alt.on('update', () => {
 	}
 
 	// Blur Background, Disable Controls, Disable Radar
-	native.transitionToBlurred(100);
 	native.showCursorThisFrame();
 	native.hideHudAndRadarThisFrame();
 	native.disableControlAction(0, 1, true);
@@ -206,6 +232,16 @@ alt.onServer('addPlaceholder', (team, location) => {
 	temp.pos.z -= 1;
 	
 	flagPlaceholders.push(temp);
+
+	if (team === 'red') {
+		let redHome = new alt.PointBlip(location.x, location.y, location.z);
+		redHome.sprite = 40;
+		redHome.color = 1;
+	} else {
+		let blueHome = new alt.PointBlip(location.x, location.y, location.z);
+		blueHome.sprite = 40;
+		blueHome.color = 3;
+	}
 });
 
 alt.onServer('addFlagDrop', (team, location) => {
@@ -217,7 +253,17 @@ alt.onServer('addFlagDrop', (team, location) => {
 		}
 
 		hasRedFlag = undefined;
+
+		if (redFlagBlip !== undefined)
+			redFlagBlip.destroy();
+
+		redFlagBlip = new alt.PointBlip(location.x, location.y, location.z);
+		redFlagBlip.sprite = 38;
+		redFlagBlip.color = 1;
+
+		
 	} else {
+		
 		blueFlagDrop = location;
 
 		if (hasBlueFlag === alt.Player.local) {
@@ -225,14 +271,31 @@ alt.onServer('addFlagDrop', (team, location) => {
 		}
 
 		hasBlueFlag = undefined;
+
+		if (blueFlagBlip !== undefined)
+			blueFlagBlip.destroy();
+
+		blueFlagBlip = new alt.PointBlip(location.x, location.y, location.z);
+		blueFlagBlip.sprite = 38;
+		blueFlagBlip.color = 3;
 	}
 });
 
 alt.onServer('removeFlagDrop', (team) => {
 	if (team === 'red') {
 		redFlagDrop = undefined;
+
+		if (redFlagBlip !== undefined)
+			redFlagBlip.destroy();
+
+		redFlagBlip = undefined;
 	} else {
 		blueFlagDrop = undefined;
+
+		if (blueFlagBlip !== undefined)
+			blueFlagBlip.destroy();
+
+		blueFlagBlip = undefined;
 	}
 });
 
@@ -252,15 +315,40 @@ alt.onServer('hasFlag', (player, team) => {
 
 alt.onServer('scoredFlag', (teamFlag) => {
 	if (teamFlag === 'red') {
+		if (alt.Player.local === hasRedFlag) {
+			native.setRunSprintMultiplierForPlayer(alt.Player.local.scriptID, 1.00);
+		}
+
 		hasRedFlag = undefined;
+
+		if (redFlagBlip !== undefined && redFlagBlip !== null) {
+			redFlagBlip.destroy();
+			redFlagBlip = undefined;
+		}
 	} else {
+		if (alt.Player.local === hasBlueFlag) {
+			native.setRunSprintMultiplierForPlayer(alt.Player.local.scriptID, 1.00);
+		}
+
 		hasBlueFlag = undefined;
+
+		if (blueFlagBlip !== undefined && blueFlagBlip !== null) {
+			blueFlagBlip.destroy();
+			blueFlagBlip = undefined;
+		}
 	}
 });
 
 alt.onServer('updateScore', (redscore, bluescore) => {
 	redScore = redscore;
 	blueScore = bluescore;
+});
+
+alt.onServer('loadModel', (model) => {
+	if (!native.hasModelLoaded(native.getHashKey(model))) {
+		alt.log(`Requested model: ${model}`);
+		native.requestModel(native.getHashKey(model));
+	}
 });
 
 alt.on('joinTeam', (teamName) => {
