@@ -373,14 +373,6 @@ function RandomPosAround(pos, range) {
 	};
 }
 
-chat.registerCmd('tpblue', (player) => {
-	player.pos = blueSpawn;
-});
-
-chat.registerCmd('tpred', (player) => {
-	player.pos = redSpawn;
-});
-
 chat.registerCmd('showmenu', (player) => {
 	alt.emitClient(player, 'showMenu');
 });

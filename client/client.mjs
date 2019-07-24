@@ -193,6 +193,7 @@ alt.on('update', () => {
 		drawText(`Red Score: ${redScore}`, 0.88, 0.15, 0.5, 255, 255, 255, 255);
 		drawText(`Blue Score: ${blueScore}`, 0.88, 0.20, 0.5, 255, 255, 255, 255);
 		drawText(`Change Team: /showmenu`, 0.88, 0.25, 0.5, 255, 255, 255, 255);
+		drawText(`Drop Flag with 'x'`, 0.88, 0.30, 0.5, 255, 255, 255, 255);
 		return;
 	}
 
