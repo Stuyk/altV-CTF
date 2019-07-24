@@ -23,6 +23,11 @@ const blueFlag = {
 	y: -2946.0,
 	z: 5.8923
 }
+const centerPoint = {
+	x: 978.0,
+	y: -3040.0,
+	z: 5.8923
+}
 const defaultWeapons = [
 	-853065399,
 	1198879012,
@@ -235,7 +240,7 @@ function dropFlag(player) {
 	}
 
 	setTimeout(() => {
-		let flagDropColshape = new alt.ColshapeSphere(dropPosition.x, dropPosition.y, dropPosition.z, 1);
+		let flagDropColshape = new alt.ColshapeCylinder(dropPosition.x, dropPosition.y, dropPosition.z - 100, 1, 300);
 		flagDropColshape.flagdrop = true;
 		flagDropColshape.team = teamInfo;
 	}, 2000);
@@ -373,6 +378,13 @@ function RandomPosAround(pos, range) {
 	};
 }
 
+function Distance(vector1, vector2) {
+	if (vector1 === undefined || vector2 === undefined) {
+		throw new Error('AddVector => vector1 or vector2 is undefined');
+	}
+	return Math.sqrt(Math.pow(vector1.x - vector2.x, 2) + Math.pow(vector1.y - vector2.y, 2) + Math.pow(vector1.z - vector2.z, 2));
+}
+
 chat.registerCmd('showmenu', (player) => {
 	alt.emitClient(player, 'showMenu');
 });
@@ -381,5 +393,10 @@ setInterval(() => {
 	alt.Player.all.forEach((target) => { 
 		target.setWeather(9);
 		target.setDateTime(1, 1, 2019, 12, 0, 0);
+
+		if (Distance(target, centerPoint) >= 350) {
+			target.pos = centerPoint;
+			chat.send(`{FF0000} Stay within the area.`);
+		}
 	});
 }, 30000);
