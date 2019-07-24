@@ -31,7 +31,9 @@ const centerPoint = {
 const defaultWeapons = [
 	-853065399,
 	1198879012,
-	-1466123874
+	-1466123874,
+	911657153, // Stun
+	615608432 // Molotov
 ]
 
 // Flag States
@@ -96,6 +98,7 @@ function joinServer(player) {
 	}
 
 	updateScores();
+	UpdateTeamCount();
 }
 
 function joinTeam(player, teamName) {
@@ -123,6 +126,7 @@ function joinTeam(player, teamName) {
 		}
 
 		respawnPlayer(player);
+		UpdateTeamCount();
 		return;
 	}
 
@@ -145,6 +149,7 @@ function joinTeam(player, teamName) {
 		}
 
 		respawnPlayer(player);
+		UpdateTeamCount();
 		return;
 	}
 }
@@ -198,6 +203,8 @@ function leaveTeam(player) {
 			blueTeam.splice(blueIndex, 1);
 		}
 	}
+
+	UpdateTeams();
 }
 
 function playerDeathEvent(player, killer) {
@@ -230,11 +237,14 @@ function dropFlag(player) {
 	
 	player.flag = false;
 	alt.emitClient(null, 'addFlagDrop', teamInfo, dropPosition);
+	
 
 	if (teamInfo === 'red') {
+		alt.emitClient(null, 'playAudio', 'red_flag_dropped');
 		redFlagDrop = dropPosition;
 		chat.broadcast(`{0000FF}${player.name}{FFFFFF} has dropped the {FF0000}red {FFFFFF}flag.`);
 	} else {
+		alt.emitClient(null, 'playAudio', 'blue_flag_dropped');
 		blueFlagDrop = dropPosition;
 		chat.broadcast(`{FF0000}${player.name}{FFFFFF} has dropped the {0000FF}blue {FFFFFF}flag.`);
 	}
@@ -285,6 +295,7 @@ function enterFlagzone(colshape, entity) {
 	if (colshape.flagdrop && colshape.team === 'red') {
 		if (entity.team === 'red') {
 			// Red team is returning their flag.
+			alt.emitClient(null, 'playAudio', 'red_flag_returned');
 			isRedFlagAvailable = true;
 			colshape.destroy();
 			redFlagDrop = undefined;
@@ -293,6 +304,7 @@ function enterFlagzone(colshape, entity) {
 			// Remove flag locally
 		} else {
 			// Blue team is picking up the flag.
+			alt.emitClient(null, 'playAudio', 'red_flag_taken');
 			isRedFlagAvailable = false;
 			entity.flag = true;
 			redFlagDrop = undefined;
@@ -308,6 +320,7 @@ function enterFlagzone(colshape, entity) {
 	if (colshape.flagdrop && colshape.team === 'blue') {
 		if (entity.team === 'blue') {
 			// Red team is returning their flag.
+			alt.emitClient(null, 'playAudio', 'blue_flag_returned');
 			isBlueFlagAvailable = true;
 			colshape.destroy();
 			blueFlagDrop = undefined;
@@ -316,6 +329,7 @@ function enterFlagzone(colshape, entity) {
 			// Remove flag locally
 		} else {
 			// Red team is picking up the flag.
+			alt.emitClient(null, 'playAudio', 'blue_flag_taken');
 			isBlueFlagAvailable = false;
 			entity.flag = true;
 			blueFlagDrop = undefined;
@@ -330,6 +344,7 @@ function enterFlagzone(colshape, entity) {
 	if (entity.team === 'red' && !entity.dead) {
 		// Grab Blue Flag
 		if (colshape.team === 'blue' && isBlueFlagAvailable) {
+			alt.emitClient(null, 'playAudio', 'blue_flag_taken');
 			alt.emitClient(null, 'hasFlag', entity, 'red');
 			isBlueFlagAvailable = false;
 			entity.flag = true;
@@ -338,6 +353,7 @@ function enterFlagzone(colshape, entity) {
 
 		// Score Blue Flag; only when the red flag is available.
 		if (colshape.team === 'red' && entity.flag && !isBlueFlagAvailable && isRedFlagAvailable) {
+			alt.emitClient(null, 'playAudio', 'red_team_score');
 			alt.emitClient(null, 'scoredFlag', 'blue');
 			entity.flag = false;
 			isBlueFlagAvailable = true;
@@ -348,6 +364,7 @@ function enterFlagzone(colshape, entity) {
 	} else if (entity.team === 'blue' && !entity.dead) {
 		// Grab Red Flag
 		if (colshape.team === 'red' && isRedFlagAvailable) {
+			alt.emitClient(null, 'playAudio', 'red_flag_taken');
 			alt.emitClient(null, 'hasFlag', entity, 'blue');
 			isRedFlagAvailable = false;
 			entity.flag = true;
@@ -356,6 +373,7 @@ function enterFlagzone(colshape, entity) {
 
 		// Score Red Flag; only when blue flag is available.
 		if (colshape.team === 'blue' && entity.flag && !isRedFlagAvailable && isBlueFlagAvailable) {
+			alt.emitClient(null, 'playAudio', 'blue_team_score');
 			alt.emitClient(null, 'scoredFlag', 'red');
 			entity.flag = false;
 			isRedFlagAvailable = true;
@@ -385,13 +403,71 @@ function Distance(vector1, vector2) {
 	return Math.sqrt(Math.pow(vector1.x - vector2.x, 2) + Math.pow(vector1.y - vector2.y, 2) + Math.pow(vector1.z - vector2.z, 2));
 }
 
+function UpdateTeamCount() {
+	var redCount = 0;
+	var blueCount = 0;
+	
+	alt.Player.all.forEach((target) => {
+		if (target.team === 'red') {
+			redCount += 1;
+		}
+
+		if (target.team === 'blue') {
+			blueCount += 1;
+		}
+	});
+
+	alt.emitClient(null, 'updateTeamCount', redCount, blueCount);
+	UpdateTeams();
+}
+
+function UpdateTeams() {
+	const redTeamMembers = [];
+	const blueTeamMembers = [];
+
+	alt.Player.all.forEach((target) => {
+		if (target.team === 'red') {
+			redTeamMembers.push(target);
+		}
+
+		if (target.team === 'blue') {
+			blueTeamMembers.push(target);
+		}
+	});
+
+	redTeamMembers.forEach((redPlayer) => {
+		alt.emitClient(redPlayer, 'updateTeams', redTeamMembers);
+	});
+
+	blueTeamMembers.forEach((bluePlayer) => {
+		alt.emitClient(bluePlayer, 'updateTeams', blueTeamMembers);
+	});
+}
+
 chat.registerCmd('showmenu', (player) => {
 	alt.emitClient(player, 'showMenu');
 });
 
+chat.registerCmd('teams', (player) => {
+	var redCount = 0;
+	var blueCount = 0;
+	
+	alt.Player.all.forEach((target) => {
+		if (target.team === 'red') {
+			redCount += 1;
+		}
+
+		if (target.team === 'blue') {
+			blueCount += 1;
+		}
+	});
+
+	chat.send(player, `${redCount} Red Players | ${blueCount} Blue Players`);
+});
+
 setInterval(() => {
 	alt.Player.all.forEach((target) => { 
-		target.setWeather(9);
+		target.setWeather(2);
 		target.setDateTime(1, 1, 2019, 12, 0, 0);
 
 		if (Distance(target, centerPoint) >= 350) {

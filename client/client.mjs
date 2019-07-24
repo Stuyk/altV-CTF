@@ -3,6 +3,7 @@ import * as native from 'natives';
 
 const teamOptions = [];
 const flagPlaceholders = [];
+var audioPlayer = new alt.WebView("http://resources/ctf/client/audioplayer.html")
 var isMenuOpen = false;
 var blueFlagDrop = undefined; // Vector3
 var redFlagDrop = undefined; // Vector3
@@ -12,6 +13,10 @@ var redScore = 0;
 var blueScore = 0;
 var blueFlagBlip = undefined;
 var redFlagBlip = undefined;
+var redPlayerCount = 0;
+var bluePlayerCount = 0;
+var currentTeamMembers = [];
+var updatingTeamMembers = false;
 
 class TeamOption {
 	constructor(x, y, width, height, text, r, g, b, a, event, eventParam) {
@@ -85,11 +90,24 @@ teamOptions.push(new TeamOption(0.25, 0.5, 0.5, 1, 'Red', 255, 0, 0, 100, 'joinT
 teamOptions.push(new TeamOption(0.75, 0.5, 0.5, 1, 'Blue', 0, 0, 255, 100, 'joinTeam', 'blue'));
 
 alt.on('update', () => {
-	if (hasRedFlag === alt.Player.local || hasBlueFlag === alt.Player.local) {
-		native.setSuperJumpThisFrame(alt.Player.local.scriptID);
-	}
-
 	native.restorePlayerStamina(alt.Player.local.scriptID, 100);
+
+	if (!updatingTeamMembers) {
+		currentTeamMembers.forEach((teamMember) => {
+			if (teamMember === undefined)
+				return;
+
+			if (teamMember.player === undefined)
+				return;
+
+			if (teamMember.player === alt.Player.local) {
+				teamMember.blip.position = [alt.Player.local.pos.x, alt.Player.local.pos.y, alt.Player.local.pos.z];
+				return;
+			}
+			
+			teamMember.blip.position = [teamMember.player.pos.x, teamMember.player.pos.y, teamMember.player.pos.z];
+		});
+	}
 
 	// Draw red flag drop.
 	if (redFlagDrop !== undefined) {
@@ -190,10 +208,12 @@ alt.on('update', () => {
 		// native.showHudComponentThisFrame(14);
 
 		// Draw Scores
-		drawText(`Red Score: ${redScore}`, 0.88, 0.15, 0.5, 255, 255, 255, 255);
-		drawText(`Blue Score: ${blueScore}`, 0.88, 0.20, 0.5, 255, 255, 255, 255);
-		drawText(`Change Team: /showmenu`, 0.88, 0.25, 0.5, 255, 255, 255, 255);
-		drawText(`Drop Flag with 'x'`, 0.88, 0.30, 0.5, 255, 255, 255, 255);
+		drawText(`~y~Scores`, 0.88, 0.15, 0.5, 255, 255, 255, 255);
+		drawText(`~b~${blueScore} | ~r~${redScore}`, 0.88, 0.20, 0.5, 255, 255, 255, 255);
+		drawText(`X to Drop the Flag`, 0.88, 0.25, 0.5, 255, 255, 255, 255);
+		drawText(`'/showmenu' for Teams`, 0.88, 0.30, 0.5, 255, 255, 255, 255);
+		drawText(`~y~Players`, 0.88, 0.35, 0.5, 255, 255, 255, 255);
+		drawText(`~r~${redPlayerCount} - ~b~${bluePlayerCount}`, 0.88, 0.40, 0.5, 255, 255, 255, 255);
 		return;
 	}
 
@@ -261,8 +281,6 @@ alt.onServer('addFlagDrop', (team, location) => {
 		redFlagBlip = new alt.PointBlip(location.x, location.y, location.z);
 		redFlagBlip.sprite = 38;
 		redFlagBlip.color = 1;
-
-		
 	} else {
 		
 		blueFlagDrop = location;
@@ -302,7 +320,7 @@ alt.onServer('removeFlagDrop', (team) => {
 
 alt.onServer('hasFlag', (player, team) => {
 	if (player === alt.Player.local) {
-		native.setRunSprintMultiplierForPlayer(alt.Player.local.scriptID, 1.49);
+		native.setRunSprintMultiplierForPlayer(alt.Player.local.scriptID, 1.30);
 	}
 	
 	if (team === 'blue') {
@@ -360,6 +378,49 @@ alt.on('keydown', (key) => {
 	if (key === 'X'.charCodeAt(0)) {
 		alt.emitServer('dropFlag');
 	}
+});
+
+alt.onServer('playAudio', (name) => {
+	audioPlayer.emit('playAudio', name);
+});
+
+alt.onServer('updateTeamCount', (redcount, bluecount) => {
+	redPlayerCount = redcount;
+	bluePlayerCount = bluecount;
+});
+
+alt.onServer('updateTeams', (currentTeamPlayers) => {
+	updatingTeamMembers = true;
+	// Delete old blip info.
+	if (currentTeamMembers.length >= 1) {
+		currentTeamMembers.forEach((member) => {
+			if (member === undefined)
+				return;
+
+			member.player = undefined;
+			member.blip.destroy();
+			member.blip = undefined;
+		});
+		currentTeamMembers = [];
+	}
+
+	currentTeamPlayers.forEach((newMember) => {
+		if (newMember === undefined)
+			return;
+		
+		var memberObject = {
+			player: newMember,
+			blip: new alt.PointBlip(newMember.pos.x, newMember.pos.y, newMember.pos.z)
+		}
+
+		memberObject.blip.sprite = 126;
+		memberObject.blip.color = 2;
+		memberObject.blip.scale = 0.75;
+		
+		currentTeamMembers.push(memberObject);
+	});
+
+	updatingTeamMembers = false;
 });
 
 function drawText(msg, x, y, scale, r, g, b, a) {
