@@ -424,7 +424,9 @@ function UpdateTeams() {
 
 	alt.Player.all.forEach((target) => {
 		alt.emitClient(target, 'updatingTeams');
+	});
 
+	alt.Player.all.forEach((target) => {
 		if (target.team === 'red') {
 			redTeamMembers.push(target);
 		}

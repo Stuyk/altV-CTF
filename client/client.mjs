@@ -390,12 +390,7 @@ alt.onServer('updateTeamCount', (redcount, bluecount) => {
 });
 
 alt.onServer('updatingTeams', () => {
-	currentTeamMembers = [];
-});
-
-alt.onServer('updateTeams', (currentTeamPlayers) => {
 	updatingTeamMembers = true;
-	// Delete old blip info.
 	if (currentTeamMembers.length >= 1) {
 		currentTeamMembers.forEach((member) => {
 			if (member === undefined)
@@ -405,9 +400,12 @@ alt.onServer('updateTeams', (currentTeamPlayers) => {
 			member.blip.destroy();
 			member.blip = undefined;
 		});
-		currentTeamMembers = [];
 	}
+	
+	currentTeamMembers = [];
+});
 
+alt.onServer('updateTeams', (currentTeamPlayers) => {
 	currentTeamPlayers.forEach((newMember) => {
 		if (newMember === undefined)
 			return;
