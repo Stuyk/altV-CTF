@@ -475,24 +475,3 @@ function Distance(vector1, vector2) {
 	}
 	return Math.sqrt(Math.pow(vector1.x - vector2.x, 2) + Math.pow(vector1.y - vector2.y, 2) + Math.pow(vector1.z - vector2.z, 2));
 }
-
-
-alt.on('keydown', (key) => {
-	if (key === 'Z'.charCodeAt(0)) {
-		tpToWaypoint();
-	}
-});
-
-function tpToWaypoint() {
-    var waypoint = native.getFirstBlipInfoId(8);
-
-    if (native.doesBlipExist(waypoint)) {
-        var coords = native.getBlipInfoIdCoord(waypoint);
-        alt.Player.local.pos = coords;
-
-        var res = native.getGroundZFor3dCoord(coords.x, coords.y, coords.z + 100, undefined, undefined);
-
-        coords.z = res + 1;
-        alt.emitServer('test', coords);
-    }
-}

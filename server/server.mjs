@@ -470,7 +470,3 @@ setInterval(() => {
 		target.setDateTime(1, 1, 2019, 12, 0, 0);
 	});
 }, 30000);
-
-alt.onClient('test', (player, coords) => {
-    player.pos = coords;
-});
