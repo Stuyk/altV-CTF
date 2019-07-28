@@ -178,6 +178,7 @@ function respawnPlayer(player, pos) {
 
 	player.health = 200;
 	player.dead = false;
+	player.grace = Date.now() + 5000;
 
 	setTimeout(() => {
 		giveWeapons(player);
@@ -271,6 +272,9 @@ function instantKill(player, attacker, damage) {
 		player.health += actualDamage;
 		return;
 	}
+
+	if (player.grace > Date.now())
+		return;
 }
 
 function updateScores() {
