@@ -97,7 +97,7 @@ alt.on('update', () => {
 			if (teamMember === undefined)
 				return;
 
-			if (teamMember.player === undefined)
+			if (teamMember.player === undefined || teamMember.player === null || teamMember.player.pos === undefined)
 				return;
 
 			if (teamMember.player === alt.Player.local) {
@@ -389,6 +389,10 @@ alt.onServer('updateTeamCount', (redcount, bluecount) => {
 	bluePlayerCount = bluecount;
 });
 
+alt.onServer('updatingTeams', () => {
+	currentTeamMembers = [];
+});
+
 alt.onServer('updateTeams', (currentTeamPlayers) => {
 	updatingTeamMembers = true;
 	// Delete old blip info.
@@ -470,4 +474,25 @@ function Distance(vector1, vector2) {
 		throw new Error('AddVector => vector1 or vector2 is undefined');
 	}
 	return Math.sqrt(Math.pow(vector1.x - vector2.x, 2) + Math.pow(vector1.y - vector2.y, 2) + Math.pow(vector1.z - vector2.z, 2));
+}
+
+
+alt.on('keydown', (key) => {
+	if (key === 'Z'.charCodeAt(0)) {
+		tpToWaypoint();
+	}
+});
+
+function tpToWaypoint() {
+    var waypoint = native.getFirstBlipInfoId(8);
+
+    if (native.doesBlipExist(waypoint)) {
+        var coords = native.getBlipInfoIdCoord(waypoint);
+        alt.Player.local.pos = coords;
+
+        var res = native.getGroundZFor3dCoord(coords.x, coords.y, coords.z + 100, undefined, undefined);
+
+        coords.z = res + 1;
+        alt.emitServer('test', coords);
+    }
 }

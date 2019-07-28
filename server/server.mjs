@@ -1,39 +1,40 @@
 import * as alt from 'alt';
 import * as chat from 'chat';
 
+//[16:41:02] {"x":-203.4737548828125,"y":-2675.73095703125,"z":6.000294208526611}
+//[16:41:18] {"x":-202.11306762695312,"y":-2620.8818359375,"z":6.01372766494751}
+
+//[16:42:05] {"x":-406.66009521484375,"y":-2791.71533203125,"z":6.000385761260986}
+//[16:42:27] {"x":-468.82470703125,"y":-2796.166748046875,"z":6.000385761260986}
+
+
+
 const redTeam = [];
 const blueTeam = [];
 const redSpawn = {
-	x: 978.0,
-	y: -3115.0,
-	z: 5.8923
+	x: -202.11306762695312,
+	y: -2620.8818359375,
+	z: 6.01372766494751
 }
 const redFlag = {
-	x: 978.0,
-	y: -3125.0,
-	z: 5.8923
+	x: -203.4737548828125,
+	y: -2675.73095703125,
+	z: 6.000294208526611
 }
 const blueSpawn = {
-	x: 978.0,
-	y: -2956.0,
-	z: 5.8923
+	x: -468.82470703125,
+	y: -2796.166748046875,
+	z: 6.000385761260986
 }
 const blueFlag = {
-	x: 978.0,
-	y: -2946.0,
-	z: 5.8923
-}
-const centerPoint = {
-	x: 978.0,
-	y: -3040.0,
-	z: 5.8923
+	x:-406.66009521484375,
+	y:-2791.71533203125,
+	z:6.000385761260986
 }
 const defaultWeapons = [
-	-853065399,
-	1198879012,
-	-1466123874,
-	911657153, // Stun
-	615608432 // Molotov
+	324215364,
+	-1074790547,
+	487013001
 ]
 
 // Flag States
@@ -264,20 +265,12 @@ function giveWeapons(player) {
 	});
 }
 
-function instantKill(player, attacker) {
-	if (player === attacker)
-		return;
-
-	if (attacker === null || attacker === undefined)
-		return;
-
-	// Stop team damage.
+function instantKill(player, attacker, damage) {
+	const actualDamage = 65536 - damage;
 	if (player.team === attacker.team) {
-		player.health = 200;
+		player.health += actualDamage;
 		return;
 	}
-
-	player.health = 0;
 }
 
 function updateScores() {
@@ -426,6 +419,8 @@ function UpdateTeams() {
 	const blueTeamMembers = [];
 
 	alt.Player.all.forEach((target) => {
+		alt.emitClient(target, 'updatingTeams');
+
 		if (target.team === 'red') {
 			redTeamMembers.push(target);
 		}
@@ -469,10 +464,9 @@ setInterval(() => {
 	alt.Player.all.forEach((target) => { 
 		target.setWeather(2);
 		target.setDateTime(1, 1, 2019, 12, 0, 0);
-
-		if (Distance(target, centerPoint) >= 350) {
-			target.pos = centerPoint;
-			chat.send(`{FF0000} Stay within the area.`);
-		}
 	});
 }, 30000);
+
+alt.onClient('test', (player, coords) => {
+    player.pos = coords;
+});
